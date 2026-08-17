@@ -375,7 +375,7 @@ artifacts and shows an actionable error. The default provider needs no credentia
 
 ## Tests and CI
 
-The local suite contains **37 passing tests** covering FinQA parsing, table
+The local suite contains **49 passing tests** covering FinQA parsing, table
 serialization, metadata preservation, BM25, dense/reranker fallback interfaces,
 RRF, safe arithmetic, percentage normalization, financial number comparison,
 retrieval metrics, citation parsing and invention, evidence routing, abstention,
