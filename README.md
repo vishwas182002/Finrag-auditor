@@ -355,8 +355,7 @@ it is not a calibrated probability.
 configured compatible endpoint. It performs two distinct calls: structured plan
 creation and grounded final generation. `configs/groq_dev.yaml` uses Groq's base
 URL and reads only `GROQ_API_KEY` from the environment. Keys are never accepted in
-YAML, traces, or result metadata. No compatible-provider accuracy is reported here
-because neither supported key was present during verification.
+YAML, traces, or result metadata. No reportable compatible-provider accuracy is committed. A local diagnostic call verified the endpoint and structured-plan plumbing, but it ran before recursive configuration inheritance was corrected, so its TinyBERT-backed artifacts were discarded.
 
 ## Streamlit UI
 
