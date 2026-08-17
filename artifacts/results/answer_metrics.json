@@ -4,7 +4,7 @@
     "duration_seconds": 84.27145195007324,
     "python": "3.11.15",
     "split": "test",
-    "split_path": "/Users/vikas/Documents/Codex/2026-08-17/files-mentioned-by-the-user-finagent/outputs/finrag-auditor/data/raw/test.json",
+    "split_path": "data/raw/test.json",
     "sample_size": 120,
     "report_count": 120,
     "corpus_scope": "selected_reports",
