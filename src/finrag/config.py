@@ -69,7 +69,25 @@ class GenerationConfig(StrictModel):
 
 class PlanningConfig(StrictModel):
     max_selected_chunks: int = Field(3, ge=1, le=10)
-    allowed_constants: tuple[str, ...] = ("1", "100", "1000", "1000000")
+    allowed_constants: tuple[str, ...] = (
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "100",
+        "1000",
+        "10000",
+        "100000",
+        "1000000",
+        "10000000",
+        "1000000000",
+    )
 
 
 class EvaluationConfig(StrictModel):
