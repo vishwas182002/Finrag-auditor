@@ -1,0 +1,12 @@
+{
+  "dataset": "FinQA",
+  "official_repository": "https://github.com/czyssrs/FinQA",
+  "paper": "https://aclanthology.org/2021.emnlp-main.300/",
+  "dataset_license": "CC BY 4.0 (official project-site statement)",
+  "repository_code_license": "MIT",
+  "files": {
+    "dev.json": "a847fb7e0d61a3125a1e2909852df6b89f1ee64d2c5ff1bf689e332214deee51",
+    "test.json": "831dbfb2e785dbc227f895ce3f24046433467aec67b09db2bd6ac7692a8a30dc"
+  }
+}
+

@@ -1,0 +1,9 @@
+extends: base.yaml
+data:
+  split: test
+  path: data/raw/test.json
+  sample_size: 120
+  unanswerable_size: 20
+  question_manifest: data/held_out/test_v2_manifest.json
+evaluation:
+  run_name: frozen_v2
