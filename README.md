@@ -430,6 +430,10 @@ scores, calculator usage, citation decision, graph path, provider, and latency.
   window cannot be recovered by generation.
 - The OpenAI-compatible provider is implemented but was not called or evaluated;
   no API key was present. Model-backed generation remains an explicit gap.
+- Plan validation permits only operands found in selected evidence or configured
+  FinQA constants. The configured constants cover the official FinQA programs,
+  but implicit out-of-benchmark conversions such as 12 months or 365 days are not
+  inferred and may produce conservative abstention.
 
 ## Responsible use
 
