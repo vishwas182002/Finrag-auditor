@@ -88,9 +88,12 @@ Those 120 questions have since been inspected and therefore are no longer called
 held out. Their artifacts remain unchanged as a historical baseline. Before the
 planner or reranker redesign, a replacement cohort was frozen at
 `data/held_out/test_v2_manifest.json`: 120 different test questions across 120
-reports, selected from the 1,027 questions outside the historical cohort with seed
-2027. Its ordered ID list and SHA-256 digest are committed. It must not be used for
-model, threshold, prompt, or provider selection.
+reports, selected from the 1,027 questions outside the historical question cohort
+with seed 2027. The question IDs are disjoint from the historical cohort, but
+report-level exclusion was not applied, so some source reports may recur. This is
+therefore a question-disjoint cohort, not a report-disjoint cohort. Its ordered ID
+list and SHA-256 digest are committed. It must not be used for model, threshold,
+prompt, or provider selection.
 
 The historical development quick run used the earlier zero-logit gate; the current
 BGE threshold was calibrated separately as documented below. Gold supporting IDs
