@@ -1,0 +1,9 @@
+extends: groq_dev.yaml
+data:
+  sample_size: 10
+  unanswerable_size: 0
+evaluation:
+  bootstrap_samples: 0
+  checkpoint_every: 1
+  resume: true
+  run_name: groq_smoke_10
