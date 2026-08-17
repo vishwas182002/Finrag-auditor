@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json 
+import json
 from pathlib import Path
 
 import pytest
@@ -20,8 +20,12 @@ def test_configuration_validation() -> None:
 
 
 def test_configuration_extends(tmp_path) -> None:
-    (tmp_path / "base.yaml").write_text("seed: 7\ndata:\n  sample_size: 10\n")
-    (tmp_path / "quick.yaml").write_text("extends: base.yaml\ndata:\n  sample_size: 2\n")
+    (tmp_path / "base.yaml").write_text(
+        "seed: 7\ndata:\n  sample_size: 10\n"
+    )
+    (tmp_path / "quick.yaml").write_text(
+        "extends: base.yaml\ndata:\n  sample_size: 2\n"
+    )
     config = load_config(tmp_path / "quick.yaml")
     assert config.seed == 7
     assert config.data.sample_size == 2
@@ -35,7 +39,6 @@ def test_configuration_extends(tmp_path) -> None:
 )
 def test_repository_configs_parse(config_path: Path) -> None:
     load_config(config_path)
-
 
 
 def test_configuration_extends_recursively(tmp_path) -> None:
@@ -66,7 +69,8 @@ def test_checkpoint_resume(tmp_path) -> None:
     checkpoint.append({"evaluation_id": "q1", "prediction": "1"})
     checkpoint.append({"evaluation_id": "q2", "prediction": "2"})
     assert checkpoint.completed_ids() == {"q1", "q2"}
-    assert json.loads((tmp_path / "checkpoint.jsonl").read_text().splitlines()[1])["prediction"] == "2"
+    second_row = (tmp_path / "checkpoint.jsonl").read_text().splitlines()[1]
+    assert json.loads(second_row)["prediction"] == "2"
 
 
 def test_openai_compatible_provider_requires_named_environment_key(monkeypatch) -> None:
