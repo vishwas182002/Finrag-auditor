@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import json
+import json 
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -25,6 +26,16 @@ def test_configuration_extends(tmp_path) -> None:
     assert config.seed == 7
     assert config.data.sample_size == 2
     assert config.data.path == tmp_path / "data/raw/dev.json"
+
+
+@pytest.mark.parametrize(
+    "config_path",
+    sorted(Path("configs").glob("*.yaml")),
+    ids=lambda path: path.name,
+)
+def test_repository_configs_parse(config_path: Path) -> None:
+    load_config(config_path)
+
 
 
 def test_configuration_extends_recursively(tmp_path) -> None:
