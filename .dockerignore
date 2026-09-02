@@ -1,0 +1,17 @@
+.venv/
+.git/
+.hf_cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
+*.py[cod]
+data/raw/
+data/processed/
+artifacts/checkpoints/
+artifacts/indexes/
+htmlcov/
+.coverage
+*.pt
+*.bin
+*.safetensors
