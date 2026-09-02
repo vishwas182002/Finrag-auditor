@@ -63,7 +63,10 @@ select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501"]
 
 [tool.mypy]
-python_version = "3.11"
+# Deliberately no `python_version` pin. Pinning it forces mypy to parse third-party
+# stubs with that grammar too, and modern stubs (numpy) use PEP 695 `type` statements
+# that only parse on 3.12+. Mypy targets the interpreter it runs under instead, so the
+# CI matrix checks the package against every supported version.
 warn_unused_ignores = true
 disallow_untyped_defs = true
 no_implicit_optional = true
