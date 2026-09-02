@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "split": "dev",
+    "sample_size": 883,
+    "retrieval_method": "hybrid_rerank",
+    "retrieval_backends": {
+      "dense": "sentence-transformers:BAAI/bge-small-en-v1.5",
+      "reranker": "cross-encoder:cross-encoder/ms-marco-TinyBERT-L-2-v2"
+    },
+    "gold_program_used_only_for_scoring": true,
+    "generation_model_called": false
+  },
+  "retrieved_evidence": {
+    "gold_evidence_available": 0.768969422423556,
+    "planner_attempted": 0.7712344280860702,
+    "executable": 0.7678369195922989,
+    "operator_accuracy": 0.1143827859569649,
+    "operand_multiset_accuracy": 0.0362400906002265,
+    "operand_recall": 0.19169497923744813,
+    "program_structure_accuracy": 0.026047565118912798,
+    "execution_accuracy": 0.05436013590033975
+  },
+  "retrieved_evidence_conditional_on_gold_available": {
+    "gold_evidence_available": 1.0,
+    "planner_attempted": 0.7776141384388807,
+    "executable": 0.7746686303387335,
+    "operator_accuracy": 0.12371134020618557,
+    "operand_multiset_accuracy": 0.047128129602356406,
+    "operand_recall": 0.2458517427589593,
+    "program_structure_accuracy": 0.033873343151693665,
+    "execution_accuracy": 0.07069219440353461
+  },
+  "oracle_gold_evidence": {
+    "gold_evidence_available": 1.0,
+    "planner_attempted": 0.7859569648924122,
+    "executable": 0.7791619479048698,
+    "operator_accuracy": 0.11891279728199321,
+    "operand_multiset_accuracy": 0.06455266138165346,
+    "operand_recall": 0.37348055870139657,
+    "program_structure_accuracy": 0.044167610419026046,
+    "execution_accuracy": 0.09399773499433749
+  }
+}

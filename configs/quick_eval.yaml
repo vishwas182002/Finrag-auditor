@@ -1,0 +1,6 @@
+extends: base.yaml
+data:
+  sample_size: 50
+  unanswerable_size: 10
+evaluation:
+  run_name: dev_quick

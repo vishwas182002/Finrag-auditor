@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "created_unix": 1786986265.990399,
+    "duration_seconds": 84.27145195007324,
+    "python": "3.11.15",
+    "split": "test",
+    "split_path": "data/raw/test.json",
+    "sample_size": 120,
+    "report_count": 120,
+    "corpus_scope": "selected_reports",
+    "corpus_chunks": 3222,
+    "text_supported_questions": 47,
+    "table_supported_questions": 91,
+    "chunking": {
+      "text_chunk_chars": 900,
+      "text_overlap_chars": 120,
+      "table_rows_per_chunk": 1
+    },
+    "retrieval_backends": {
+      "dense": "sentence-transformers:BAAI/bge-small-en-v1.5",
+      "reranker": "cross-encoder:cross-encoder/ms-marco-TinyBERT-L-2-v2"
+    },
+    "provider": "deterministic-extractive-v1",
+    "seed": 42,
+    "gold_evidence_used_for_retrieval": false
+  },
+  "answer": {
+    "provider": "deterministic-extractive-v1",
+    "answerable_questions": 120,
+    "answered_questions": 112,
+    "coverage": 0.9333333333333333,
+    "abstention_rate": 0.06666666666666667,
+    "accuracy_on_answered": 0.026785714285714284,
+    "exact_match": 0.008333333333333333,
+    "numerical_accuracy": 0.025,
+    "correct_unanswerable_abstention_rate": 0.35,
+    "constructed_unanswerable_questions": 20,
+    "bootstrap_95_ci": {
+      "exact_match": {
+        "mean": 0.008333333333333333,
+        "ci_low": 0.0,
+        "ci_high": 0.025
+      },
+      "numerical_accuracy": {
+        "mean": 0.025,
+        "ci_low": 0.0,
+        "ci_high": 0.058333333333333334
+      }
+    }
+  },
+  "citations": {
+    "evaluated_answered_questions": 112,
+    "citation_validity": 1.0,
+    "citation_precision": 0.5178571428571429,
+    "citation_recall": 0.3712797619047619,
+    "has_valid_citation": 1.0
+  }
+}
