@@ -1,0 +1,30 @@
+{
+  "retrieval_metric_version": "report-scoped-v2",
+  "answer_metric_version": "financial-units-v2",
+  "source_sha256": "ed0c01b96a40418e6c31ac6af6ac06371c4898a08f7c26e5a575b0bfd48533ac",
+  "kind": "saved_workflow_regrade",
+  "fresh_inference": false,
+  "new_answer_verification_applied": false,
+  "limitations": "Only saved workflow hits can be regraded. Other retrieval methods lack saved hit identities. Original answer decisions and citation-reference checks are preserved; this is not a run of the new workflow.",
+  "answerable_questions": 120,
+  "answered_questions": 112,
+  "changed_answer_scores": 0,
+  "numerical_tolerance": 0.02,
+  "retrieval": {
+    "recall@1": 0.3423611111111111,
+    "recall@3": 0.5409722222222222,
+    "recall@5": 0.6284722222222221,
+    "mrr": 0.5880555555555557,
+    "ndcg@5": 0.5435790186780539
+  },
+  "answer": {
+    "exact_match": 0.008333333333333333,
+    "numerical_accuracy": 0.025
+  },
+  "citations_on_answered": {
+    "citation_reference_integrity": 1.0,
+    "citation_precision": 0.5,
+    "citation_recall": 0.35788690476190477,
+    "has_valid_citation": 1.0
+  }
+}

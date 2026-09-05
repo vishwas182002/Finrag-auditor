@@ -28,7 +28,7 @@ def test_percentage_answer_is_preferred_over_trailing_years() -> None:
 
 
 def test_retrieval_metrics(hits: list[RetrievalHit]) -> None:
-    metrics = retrieval_metrics(hits, {"table_1"})
+    metrics = retrieval_metrics(hits, {"table_1"}, hits[0].chunk.report_id)
     assert metrics["recall@1"] == 1.0
     assert metrics["mrr"] == 1.0
     assert metrics["ndcg@5"] == 1.0
@@ -54,7 +54,7 @@ def test_citation_metrics(hits: list[RetrievalHit]) -> None:
         latency_ms={},
         provider="test",
     )
-    metrics = citation_metrics(result, {"table_1"})
+    metrics = citation_metrics(result, {"table_1"}, hits[0].chunk.report_id)
     assert metrics["citation_reference_integrity"] == 1.0
     assert metrics["citation_precision"] == 1.0
     assert metrics["citation_recall"] == 1.0

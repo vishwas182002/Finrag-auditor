@@ -13,7 +13,12 @@ import numpy as np
 from finrag.config import AppConfig
 from finrag.data.schemas import RetrievalHit
 from finrag.evaluation.bootstrap import bootstrap_mean_ci
-from finrag.evaluation.retrieval_metrics import mean_metrics, retrieval_metrics
+from finrag.evaluation.retrieval_metrics import (
+    METRIC_VERSION,
+    mean_metrics,
+    retrieval_metrics,
+    retrieval_record,
+)
 from finrag.pipeline import build_corpus, build_index
 
 LOGGER = logging.getLogger(__name__)
@@ -27,6 +32,7 @@ def run_retrieval_ablation(config: AppConfig, project_root: Path) -> dict[str, A
     report: dict[str, Any] = {
         "metadata": {
             "split": config.data.split,
+            "retrieval_metric_version": METRIC_VERSION,
             "sample_size": len(selected),
             "corpus_scope": config.data.corpus_scope,
             "corpus_chunks": len(chunks),
@@ -70,15 +76,9 @@ def run_retrieval_ablation(config: AppConfig, project_root: Path) -> dict[str, A
             amortized_rerank_ms = rerank_total_ms / max(len(selected), 1)
             latencies = [value + amortized_rerank_ms for value in retrieval_latencies]
             for example, hits in zip(selected, hit_lists, strict=True):
-                metrics = retrieval_metrics(hits, example.gold_source_ids)
+                metrics = retrieval_metrics(hits, example.gold_source_ids, example.report_id)
                 rows.append(metrics)
-                detail_rows.append(
-                    {
-                        "question_id": example.question_id,
-                        "method": method,
-                        **metrics,
-                    }
-                )
+                detail_rows.append(retrieval_record(example, hits, method, metrics))
             LOGGER.info(
                 "Retrieval ablation %s batched reranking complete: %.1f ms total",
                 method,
@@ -89,15 +89,9 @@ def run_retrieval_ablation(config: AppConfig, project_root: Path) -> dict[str, A
                 started = time.perf_counter()
                 hits = index.search(example.question, method=method, top_k=5)
                 latencies.append((time.perf_counter() - started) * 1000)
-                metrics = retrieval_metrics(hits, example.gold_source_ids)
+                metrics = retrieval_metrics(hits, example.gold_source_ids, example.report_id)
                 rows.append(metrics)
-                detail_rows.append(
-                    {
-                        "question_id": example.question_id,
-                        "method": method,
-                        **metrics,
-                    }
-                )
+                detail_rows.append(retrieval_record(example, hits, method, metrics))
                 if position % 100 == 0 or position == len(selected):
                     LOGGER.info(
                         "Retrieval ablation %s: %d/%d questions",

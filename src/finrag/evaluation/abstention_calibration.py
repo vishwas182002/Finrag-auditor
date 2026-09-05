@@ -122,10 +122,10 @@ def run_abstention_calibration(config: AppConfig, project_root: Path) -> dict[st
     )
     reranking_seconds = time.perf_counter() - started
     rows: list[dict[str, Any]] = []
-    no_score_config = config.evidence.model_copy(update={"min_reranker_score": -1e30})
+    no_score_config = config.evidence.model_copy(update={"min_reranker_score": -1e30, "fallback_min_reranker_score": 0.0})
     for answerable, hit_groups in ((True, answerable_hits), (False, unanswerable_hits)):
         for example, hits in zip(selected, hit_groups, strict=True):
-            _, details = evidence_sufficiency(example.question, hits, no_score_config)
+            _, details = evidence_sufficiency(example.question, hits, no_score_config, index.backends["reranker"])
             rows.append(
                 {
                     "question_id": example.question_id,
@@ -144,6 +144,7 @@ def run_abstention_calibration(config: AppConfig, project_root: Path) -> dict[st
     report = {
         "metadata": {
             "split": config.data.split,
+            "threshold_config_key": "fallback_min_reranker_score" if index.backends["reranker"].startswith("fallback:") else "min_reranker_score",
             "answerable_questions": len(selected),
             "constructed_unanswerable_questions": len(selected),
             "construction": "Identical dev question with its source report removed from retrieval.",

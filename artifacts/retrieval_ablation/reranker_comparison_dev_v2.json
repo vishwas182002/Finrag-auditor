@@ -1,0 +1,49 @@
+{
+  "method": "hybrid_rerank",
+  "metric_version": "report-scoped-v2",
+  "question_count": 883,
+  "baseline_path": "artifacts/retrieval_ablation/tinybert_dev_v2/retrieval_rows.jsonl",
+  "candidate_path": "artifacts/retrieval_ablation/bge_reranker_dev_v2/retrieval_rows.jsonl",
+  "paired_deltas_candidate_minus_baseline": {
+    "recall@1": {
+      "mean": 0.08163457908644771,
+      "bootstrap_95_ci": {
+        "mean": 0.08163457908644772,
+        "ci_low": 0.05832153642884108,
+        "ci_high": 0.10390949414873536
+      }
+    },
+    "recall@3": {
+      "mean": 0.09494148735371837,
+      "bootstrap_95_ci": {
+        "mean": 0.09494148735371839,
+        "ci_low": 0.0747381087202718,
+        "ci_high": 0.11797140430351076
+      }
+    },
+    "recall@5": {
+      "mean": 0.06392978482446206,
+      "bootstrap_95_ci": {
+        "mean": 0.06392978482446206,
+        "ci_low": 0.044423839184597955,
+        "ci_high": 0.08427897319743298
+      }
+    },
+    "mrr": {
+      "mean": 0.10383163457908655,
+      "bootstrap_95_ci": {
+        "mean": 0.10383163457908645,
+        "ci_low": 0.08266562853907135,
+        "ci_high": 0.12614382785956968
+      }
+    },
+    "ndcg@5": {
+      "mean": 0.08719552701972436,
+      "bootstrap_95_ci": {
+        "mean": 0.08719552701972431,
+        "ci_low": 0.06972848514772431,
+        "ci_high": 0.10475276467683249
+      }
+    }
+  }
+}

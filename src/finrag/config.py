@@ -40,7 +40,7 @@ class RetrievalConfig(StrictModel):
     candidate_k: int = Field(15, ge=1)
     rrf_k: int = Field(60, ge=1)
     embedding_model: str = "BAAI/bge-small-en-v1.5"
-    reranker_model: str = "cross-encoder/ms-marco-TinyBERT-L-2-v2"
+    reranker_model: str = "BAAI/bge-reranker-base"
     device: str = "cpu"
     # Persist corpus embeddings under artifacts/indexes/, keyed by model name and
     # chunk contents, so repeated runs skip the multi-minute CPU embedding step.
@@ -58,11 +58,13 @@ class EvidenceConfig(StrictModel):
     min_token_overlap: float = Field(0.14, ge=0.0, le=1.0)
     min_content_tokens: int = Field(4, ge=1)
     min_reranker_score: float = 0.0
+    # A fallback has a different score scale. None means abstain on that backend.
+    fallback_min_reranker_score: float | None = Field(None, ge=0.0, le=1.0)
 
 
 class GenerationConfig(StrictModel):
     provider: Literal["extractive", "openai", "openai_compatible"] = "extractive"
-    model: str = "deterministic-extractive-v1"
+    model: str = "deterministic-extractive-v2"
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_retries: int = Field(0, ge=0, le=3)
     base_url: str | None = None

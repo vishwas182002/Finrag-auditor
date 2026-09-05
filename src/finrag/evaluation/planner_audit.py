@@ -12,7 +12,8 @@ from typing import Any
 
 from finrag.config import AppConfig
 from finrag.data.schemas import FinQAExample, RetrievalHit
-from finrag.evaluation.answer_metrics import parse_financial_number
+from finrag.evaluation.answer_metrics import ANSWER_METRIC_VERSION, parse_financial_number
+from finrag.evaluation.retrieval_metrics import METRIC_VERSION
 from finrag.generation.planning import expression_operands, legacy_plan_expression
 from finrag.indexing.chunking import chunk_report
 from finrag.pipeline import build_corpus, build_index
@@ -137,9 +138,7 @@ def score_legacy_plan(
         "operand_multiset_accuracy": float(operand_accuracy),
         "operand_recall": operand_overlap / max(len(gold_operands), 1),
         "program_structure_accuracy": float(operator_accuracy and operand_accuracy),
-        "execution_accuracy": float(
-            _execution_matches(expression, example.answer, tolerance)
-        ),
+        "execution_accuracy": float(_execution_matches(expression, example.answer, tolerance)),
     }
 
 
@@ -184,7 +183,10 @@ def run_planner_audit(config: AppConfig, project_root: Path) -> dict[str, Any]:
             top_k=config.retrieval.top_k,
         )
         gold = set(example.gold_source_ids)
-        evidence_available = any(set(hit.chunk.source_ids) & gold for hit in retrieved)
+        evidence_available = any(
+            hit.chunk.report_id == example.report_id and set(hit.chunk.source_ids) & gold
+            for hit in retrieved
+        )
         base = {
             "question_id": example.question_id,
             "report_id": example.report_id,
@@ -214,6 +216,8 @@ def run_planner_audit(config: AppConfig, project_root: Path) -> dict[str, Any]:
     report = {
         "metadata": {
             "split": config.data.split,
+            "retrieval_metric_version": METRIC_VERSION,
+            "answer_metric_version": ANSWER_METRIC_VERSION,
             "sample_size": len(selected),
             "retrieval_method": config.retrieval.method,
             "retrieval_backends": index.backends,
