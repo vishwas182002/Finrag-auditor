@@ -214,8 +214,18 @@ def test_archived_regrades_reproduce_committed_outputs(tmp_path: Path) -> None:
         output = tmp_path / label
         report = regrade_predictions(root / "artifacts/legacy_v1" / source, output)
         saved = root / "artifacts/regraded_v2" / label
-        assert report == json.loads((saved / "summary.json").read_text())
-        assert (output / "rows.jsonl").read_bytes() == (saved / "rows.jsonl").read_bytes()
+        expected = json.loads((saved / "summary.json").read_text())
+        # Python 3.12 uses improved float summation. Permit only roundoff,
+        # while retaining exact source hashes, identities, counts and flags.
+        for key in ("retrieval", "answer", "citations_on_answered"):
+            assert report.pop(key) == pytest.approx(expected.pop(key), rel=0, abs=1e-12)
+        assert report == expected
+        actual_rows = list(map(json.loads, (output / "rows.jsonl").read_text().splitlines()))
+        expected_rows = list(map(json.loads, (saved / "rows.jsonl").read_text().splitlines()))
+        for actual, expected_row in zip(actual_rows, expected_rows, strict=True):
+            for key in ("retrieval", "answer", "citations", "previous_answer"):
+                assert actual.pop(key) == pytest.approx(expected_row.pop(key), rel=0, abs=1e-12)
+            assert actual == expected_row
 
 
 def test_regrade_rejects_conflicting_report_identity(tmp_path: Path) -> None:
