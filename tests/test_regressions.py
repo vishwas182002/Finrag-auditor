@@ -197,8 +197,10 @@ def test_extractive_provider_generation_branches(hits: list[RetrievalHit], chunk
     provider = ExtractiveProvider()
     plan = AnswerPlan(decision="answer", answer_type="extractive", reason_code="test")
     assert provider.generate("q", [], plan) == "INSUFFICIENT_EVIDENCE"
-    assert "the calculated result is 20%" in provider.generate("What percentage changed?", hits, plan, "20")
-    assert "retrieved value is 100" in provider.generate("q", hits, plan)
+    plan.result_unit = "percent"
+    plan.selected_citation_ids = [hits[0].chunk.citation_id]
+    assert provider.generate("What percentage changed?", hits, plan, "20").startswith("20% [CITATION:")
+    assert provider.generate("q", hits, plan).startswith(hits[0].chunk.content)
     text_only = RetrievalHit(chunk=chunks[2], score=1.0, rank=1, method="test")
     assert provider.generate("q", [text_only], plan).startswith("Other company discussed emissions targets.")
 

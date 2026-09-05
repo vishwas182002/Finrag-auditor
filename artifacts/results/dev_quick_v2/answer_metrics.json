@@ -1,0 +1,161 @@
+{
+  "metadata": {
+    "created_unix": 1788570208.8729012,
+    "retrieval_metric_version": "report-scoped-v2",
+    "answer_metric_version": "financial-units-v2",
+    "provenance": {
+      "config": {
+        "seed": 42,
+        "data": {
+          "split": "dev",
+          "sample_size": 50,
+          "unanswerable_size": 10,
+          "corpus_scope": "selected_reports"
+        },
+        "chunking": {
+          "text_chunk_chars": 900,
+          "text_overlap_chars": 120,
+          "table_rows_per_chunk": 1
+        },
+        "retrieval": {
+          "method": "hybrid_rerank",
+          "top_k": 5,
+          "candidate_k": 15,
+          "rrf_k": 60,
+          "embedding_model": "BAAI/bge-small-en-v1.5",
+          "reranker_model": "BAAI/bge-reranker-base",
+          "device": "cpu",
+          "use_model_cache": true
+        },
+        "evidence": {
+          "min_chunks": 1,
+          "min_token_overlap": 0.14,
+          "min_content_tokens": 4,
+          "min_reranker_score": 0.6461040377616882,
+          "fallback_min_reranker_score": null
+        },
+        "planning": {
+          "max_selected_chunks": 3,
+          "allowed_constants": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "100",
+            "1000",
+            "10000",
+            "100000",
+            "1000000",
+            "10000000",
+            "1000000000"
+          ]
+        },
+        "generation": {
+          "provider": "extractive",
+          "model": "deterministic-extractive-v2",
+          "temperature": 0.0,
+          "max_retries": 0,
+          "base_url": null,
+          "api_key_env": "OPENAI_API_KEY"
+        },
+        "evaluation": {
+          "numerical_tolerance": 0.02,
+          "bootstrap_samples": 1000,
+          "resume": false,
+          "run_name": "dev_quick_v2",
+          "min_answerable_acceptance": 0.8
+        }
+      },
+      "data_sha256": "a847fb7e0d61a3125a1e2909852df6b89f1ee64d2c5ff1bf689e332214deee51",
+      "selected_sha256": "ec6f19322a727c798b899e33df5b022a6f4eb874f464453ebb3793d5c5ccae0a",
+      "corpus_sha256": "0db2a036849c73df13dd00c091100d6b6720796e0312d457e9ed93593dd6eb20",
+      "source_sha256": "2ecf7def0424ea07e7921b303a6ed6710d147a832906a9ed64a5f01e7463812e",
+      "dependencies": {
+        "langgraph": "1.2.11",
+        "langchain-core": "1.6.2",
+        "langchain-openai": "1.6.0",
+        "numpy": "2.4.6",
+        "pydantic": "2.13.5",
+        "rank-bm25": "0.2.2",
+        "scikit-learn": "1.9.0",
+        "sentence-transformers": "6.0.1",
+        "torch": "2.13.0",
+        "transformers": "5.16.1"
+      },
+      "provider": "deterministic-extractive-v2",
+      "backends": {
+        "dense": "sentence-transformers:BAAI/bge-small-en-v1.5",
+        "reranker": "cross-encoder:BAAI/bge-reranker-base"
+      },
+      "retrieval_metric_version": "report-scoped-v2",
+      "answer_metric_version": "financial-units-v2"
+    },
+    "duration_seconds": 110.11802172660828,
+    "python": "3.11.15",
+    "split": "dev",
+    "split_path": "data/raw/dev.json",
+    "sample_size": 50,
+    "report_count": 50,
+    "corpus_scope": "selected_reports",
+    "corpus_chunks": 1426,
+    "text_supported_questions": 21,
+    "table_supported_questions": 43,
+    "chunking": {
+      "text_chunk_chars": 900,
+      "text_overlap_chars": 120,
+      "table_rows_per_chunk": 1
+    },
+    "retrieval_backends": {
+      "dense": "sentence-transformers:BAAI/bge-small-en-v1.5",
+      "reranker": "cross-encoder:BAAI/bge-reranker-base"
+    },
+    "provider": "deterministic-extractive-v2",
+    "run_name": "dev_quick_v2",
+    "evaluation_fingerprint": "0b3dc4690e3b86b2e5428ed75e14d5b64a49f6ceffb7d0c83dc5e3ea1a948dd4",
+    "question_manifest": null,
+    "question_ids_sha256": "f9d8fda5dc00b2998ae74601aaa965820587418c7dc30ff15305ec604cab9306",
+    "seed": 42,
+    "gold_evidence_used_for_retrieval": false
+  },
+  "answer": {
+    "provider": "deterministic-extractive-v2",
+    "run_name": "dev_quick_v2",
+    "evaluation_fingerprint": "0b3dc4690e3b86b2e5428ed75e14d5b64a49f6ceffb7d0c83dc5e3ea1a948dd4",
+    "question_manifest": null,
+    "question_ids_sha256": "f9d8fda5dc00b2998ae74601aaa965820587418c7dc30ff15305ec604cab9306",
+    "answerable_questions": 50,
+    "answered_questions": 35,
+    "coverage": 0.7,
+    "abstention_rate": 0.3,
+    "accuracy_on_answered": 0.02857142857142857,
+    "exact_match": 0.0,
+    "numerical_accuracy": 0.02,
+    "correct_unanswerable_abstention_rate": 1.0,
+    "constructed_unanswerable_questions": 10,
+    "bootstrap_95_ci": {
+      "exact_match": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "numerical_accuracy": {
+        "mean": 0.02,
+        "ci_low": 0.0,
+        "ci_high": 0.06
+      }
+    }
+  },
+  "citations": {
+    "evaluated_answered_questions": 35,
+    "citation_reference_integrity": 1.0,
+    "citation_precision": 0.8,
+    "citation_recall": 0.5595238095238096,
+    "has_valid_citation": 1.0
+  }
+}

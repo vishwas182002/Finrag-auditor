@@ -28,3 +28,7 @@ class JsonlCheckpoint:
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
 
+
+    def reset(self) -> None:
+        """A non-resumed run starts a fresh file instead of appending duplicates."""
+        self.path.write_text("")

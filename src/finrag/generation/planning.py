@@ -9,6 +9,7 @@ from decimal import Decimal, InvalidOperation
 
 from finrag.data.schemas import AnswerPlan, PlanValidation, RetrievalHit
 from finrag.tools.calculator import UnsafeExpressionError, normalize_expression, safe_calculate
+from finrag.tools.financial_numbers import parse_quantities
 
 NUMBER_RE = re.compile(r"(?<![\w])[-]?\d[\d,]*(?:\.\d+)?")
 
@@ -67,6 +68,9 @@ def legacy_answer_plan(question: str, hits: list[RetrievalHit]) -> AnswerPlan:
         answer_type="calculation" if expression else "extractive",
         selected_citation_ids=[hits[0].chunk.citation_id],
         calculator_expression=expression,
+        result_unit="percent"
+        if expression and any(word in question.lower() for word in ("percent", "ratio"))
+        else "number",
         reason_code="deterministic_legacy_baseline",
     )
 
@@ -85,21 +89,33 @@ def expression_operands(expression: str) -> list[str]:
     normalized = normalize_expression(expression)
     tree = ast.parse(normalized, mode="eval")
     operands: list[str] = []
-    for node in ast.walk(tree):
+
+    def visit(node: ast.AST) -> None:
+        if isinstance(node, ast.UnaryOp) and isinstance(node.operand, ast.Constant):
+            sign = "-" if isinstance(node.op, ast.USub) else ""
+            canonical = _canonical_decimal(sign + str(node.operand.value))
+            if canonical is not None:
+                operands.append(canonical)
+            return
         if isinstance(node, ast.Constant) and isinstance(node.value, int | float):
             canonical = _canonical_decimal(str(node.value))
             if canonical is not None:
                 operands.append(canonical)
+        for child in ast.iter_child_nodes(node):
+            visit(child)
+
+    visit(tree)
     return operands
 
 
 def evidence_operands(hits: list[RetrievalHit]) -> set[str]:
     values: set[str] = set()
     for hit in hits:
-        for raw in NUMBER_RE.findall(hit.chunk.content):
-            canonical = _canonical_decimal(raw)
-            if canonical is not None:
-                values.add(canonical)
+        for quantity in parse_quantities(hit.chunk.content):
+            for value in (quantity.amount, quantity.value):
+                canonical = _canonical_decimal(str(value))
+                if canonical is not None:
+                    values.add(canonical)
     return values
 
 
@@ -131,6 +147,10 @@ def validate_answer_plan(
         )
     if not plan.selected_citation_ids:
         reasons.append("answer_plan_has_no_evidence")
+    if plan.answer_type == "none":
+        reasons.append("answer_plan_has_no_answer_type")
+    if len(set(plan.selected_citation_ids)) != len(plan.selected_citation_ids):
+        reasons.append("duplicate_plan_citation")
     if invalid_ids:
         reasons.append("plan_citation_not_retrieved")
     if len(plan.selected_citation_ids) > max_selected_chunks:
@@ -153,7 +173,9 @@ def validate_answer_plan(
             if (canonical := _canonical_decimal(raw)) is not None
         }
         unsupported = [
-            value for value in expression_values if value not in available and value not in constants
+            value
+            for value in expression_values
+            if value not in available and value not in constants
         ]
         if unsupported:
             reasons.append("expression_operand_not_in_selected_evidence")

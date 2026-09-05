@@ -5,18 +5,22 @@ from __future__ import annotations
 from finrag.data.schemas import AnswerResult
 
 
-def citation_metrics(result: AnswerResult, gold_source_ids: set[str]) -> dict[str, float]:
+def citation_metrics(
+    result: AnswerResult, gold_source_ids: set[str], gold_report_id: str
+) -> dict[str, float]:
     lookup = {hit.chunk.citation_id: hit.chunk for hit in result.retrieved}
-    cited = result.citations
+    cited = list(dict.fromkeys(result.citations))
     relevant_citations = [
         citation
         for citation in cited
-        if citation in lookup and bool(set(lookup[citation].source_ids) & gold_source_ids)
+        if citation in lookup
+        and lookup[citation].report_id == gold_report_id
+        and bool(set(lookup[citation].source_ids) & gold_source_ids)
     ]
     covered_sources = {
         source_id
         for citation in cited
-        if citation in lookup
+        if citation in lookup and lookup[citation].report_id == gold_report_id
         for source_id in lookup[citation].source_ids
         if source_id in gold_source_ids
     }

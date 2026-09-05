@@ -1,0 +1,43 @@
+{
+  "date_utc": "2026-09-05",
+  "device": "CPU",
+  "torch_num_threads": 4,
+  "python": "3.11.15",
+  "system": "Darwin",
+  "machine": "arm64",
+  "data_sha256": "a847fb7e0d61a3125a1e2909852df6b89f1ee64d2c5ff1bf689e332214deee51",
+  "source_sha256": "2ecf7def0424ea07e7921b303a6ed6710d147a832906a9ed64a5f01e7463812e",
+  "dependencies": {
+    "langgraph": "1.2.11",
+    "langchain-core": "1.6.2",
+    "langchain-openai": "1.6.0",
+    "numpy": "2.4.6",
+    "pydantic": "2.13.5",
+    "rank-bm25": "0.2.2",
+    "scikit-learn": "1.9.0",
+    "sentence-transformers": "6.0.1",
+    "torch": "2.13.0",
+    "transformers": "5.16.1"
+  },
+  "model_snapshot_commits": {
+    "cross-encoder/ms-marco-TinyBERT-L-2-v2": [
+      "81d1926f67cb8eee2c2be17ca9f793c7c3bd20cc"
+    ],
+    "BAAI/bge-small-en-v1.5": [
+      "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a"
+    ],
+    "BAAI/bge-reranker-base": [
+      "2cfc18c9415c912f9d8155881c133215df768a70"
+    ]
+  },
+  "retrieval_metric_version": "report-scoped-v2",
+  "answer_metric_version": "financial-units-v2",
+  "generation_model_called": false,
+  "frozen_test_cohort_evaluated": false,
+  "retrieval_runs": [
+    "bge_reranker_dev_v2",
+    "tinybert_dev_v2"
+  ],
+  "planner_run": "legacy_planner_dev_v2",
+  "workflow_run": "dev_quick_v2"
+}

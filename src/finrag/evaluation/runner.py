@@ -16,12 +16,18 @@ import numpy as np
 from finrag.agents.graph import FinRAGWorkflow
 from finrag.config import AppConfig
 from finrag.data.schemas import AnswerResult, FinQAExample
-from finrag.evaluation.answer_metrics import score_answer
+from finrag.evaluation.answer_metrics import ANSWER_METRIC_VERSION, score_answer
 from finrag.evaluation.bootstrap import bootstrap_mean_ci
 from finrag.evaluation.checkpoint import JsonlCheckpoint
 from finrag.evaluation.citation_metrics import citation_metrics
 from finrag.evaluation.latency import latency_summary
-from finrag.evaluation.retrieval_metrics import mean_metrics, retrieval_metrics
+from finrag.evaluation.provenance import digest, evaluation_identity
+from finrag.evaluation.retrieval_metrics import (
+    METRIC_VERSION,
+    mean_metrics,
+    retrieval_metrics,
+    retrieval_record,
+)
 from finrag.pipeline import build_corpus, build_index, build_provider
 
 LOGGER = logging.getLogger(__name__)
@@ -55,10 +61,14 @@ def _prediction_row(
 ) -> dict[str, Any]:
     answer_scores = score_answer(result.answer, example.answer, tolerance) if answerable else {}
     citation_scores = (
-        citation_metrics(result, set(example.gold_source_ids)) if answerable else {}
+        citation_metrics(result, set(example.gold_source_ids), example.report_id)
+        if answerable
+        else {}
     )
     return {
         "evaluation_id": evaluation_id,
+        "retrieval_metric_version": METRIC_VERSION,
+        "answer_metric_version": ANSWER_METRIC_VERSION,
         "question_id": example.question_id,
         "report_id": example.report_id,
         "question": example.question,
@@ -80,6 +90,7 @@ def _prediction_row(
         "retrieved": [
             {
                 "citation_id": hit.chunk.citation_id,
+                "report_id": hit.chunk.report_id,
                 "source_ids": list(hit.chunk.source_ids),
                 "source_type": hit.chunk.source_type,
                 "score": hit.score,
@@ -119,11 +130,9 @@ def run_evaluation(config: AppConfig, project_root: Path) -> dict[str, Any]:
             query_started = time.perf_counter()
             hits = index.search(example.question, method=method, top_k=5)
             retrieval_latencies.append((time.perf_counter() - query_started) * 1000)
-            metrics = retrieval_metrics(hits, example.gold_source_ids)
+            metrics = retrieval_metrics(hits, example.gold_source_ids, example.report_id)
             per_query.append(metrics)
-            retrieval_detail.append(
-                {"method": method, "question_id": example.question_id, **metrics}
-            )
+            retrieval_detail.append(retrieval_record(example, hits, method, metrics))
         aggregate = _mean(per_query)
         cis = {
             key: bootstrap_mean_ci(
@@ -150,30 +159,18 @@ def run_evaluation(config: AppConfig, project_root: Path) -> dict[str, Any]:
 
     provider = build_provider(config)
     workflow = FinRAGWorkflow(index, provider, config)
-    fingerprint_config = config.model_dump(mode="json")
-    fingerprint_config["data"]["path"] = _portable_path(config.data.path, project_root)
-    fingerprint_config["data"]["question_manifest"] = _portable_path(
-        config.data.question_manifest, project_root
+    fingerprint_payload = evaluation_identity(
+        config, selected, chunks, provider.name, index.backends
     )
-    # Operational controls do not change predictions. Canonicalizing them keeps
-    # an interrupted run resumable after pacing or resume settings are adjusted.
-    fingerprint_config["evaluation"]["resume"] = False
-    fingerprint_config["generation"].pop("request_interval_seconds", None)
-    fingerprint_payload = {
-        "config": fingerprint_config,
-        "question_ids": [example.question_id for example in selected],
-        "provider": provider.name,
-        "backends": index.backends,
-    }
-    evaluation_fingerprint = hashlib.sha256(
-        json.dumps(fingerprint_payload, sort_keys=True).encode()
-    ).hexdigest()[:16]
+    evaluation_fingerprint = digest(fingerprint_payload)
     checkpoint = JsonlCheckpoint(
         project_root
         / "artifacts"
         / "checkpoints"
         / f"workflow_{config.evaluation.run_name}_{evaluation_fingerprint}.jsonl"
     )
+    if not config.evaluation.resume:
+        checkpoint.reset()
     existing_rows = checkpoint.rows() if config.evaluation.resume else []
     existing = {str(row["evaluation_id"]): row for row in existing_rows}
     prediction_rows: list[dict[str, Any]] = []
@@ -184,7 +181,9 @@ def run_evaluation(config: AppConfig, project_root: Path) -> dict[str, Any]:
         evaluation_cases.append((f"answerable:{example.question_id}", example, True, None))
     for example in selected[: config.data.unanswerable_size]:
         wrong_corpus = [report for report in all_report_ids if report != example.report_id]
-        evaluation_cases.append((f"unanswerable:{example.question_id}", example, False, wrong_corpus))
+        evaluation_cases.append(
+            (f"unanswerable:{example.question_id}", example, False, wrong_corpus)
+        )
 
     for evaluation_id, example, answerable, allowed_reports in evaluation_cases:
         if evaluation_id in existing:
@@ -232,8 +231,7 @@ def run_evaluation(config: AppConfig, project_root: Path) -> dict[str, Any]:
         ),
         **answer_aggregate,
         "correct_unanswerable_abstention_rate": (
-            sum(row["abstained"] for row in unanswerable_rows)
-            / max(len(unanswerable_rows), 1)
+            sum(row["abstained"] for row in unanswerable_rows) / max(len(unanswerable_rows), 1)
         ),
         "constructed_unanswerable_questions": len(unanswerable_rows),
         "bootstrap_95_ci": {
@@ -253,6 +251,9 @@ def run_evaluation(config: AppConfig, project_root: Path) -> dict[str, Any]:
     latency_report = latency_summary(workflow_latencies)
     metadata = {
         "created_unix": started,
+        "retrieval_metric_version": METRIC_VERSION,
+        "answer_metric_version": ANSWER_METRIC_VERSION,
+        "provenance": fingerprint_payload,
         "duration_seconds": time.time() - started,
         "python": platform.python_version(),
         "split": config.data.split,
@@ -296,11 +297,15 @@ def run_evaluation(config: AppConfig, project_root: Path) -> dict[str, Any]:
     )
 
     (results_dir / "retrieval_metrics.json").write_text(
-        json.dumps({"metadata": metadata, "methods": retrieval_report}, indent=2, default=_json_default)
+        json.dumps(
+            {"metadata": metadata, "methods": retrieval_report}, indent=2, default=_json_default
+        )
         + "\n"
     )
     (results_dir / "answer_metrics.json").write_text(
-        json.dumps({"metadata": metadata, "answer": answer_report, "citations": citation_report}, indent=2)
+        json.dumps(
+            {"metadata": metadata, "answer": answer_report, "citations": citation_report}, indent=2
+        )
         + "\n"
     )
     with (results_dir / "predictions.jsonl").open("w", encoding="utf-8") as handle:

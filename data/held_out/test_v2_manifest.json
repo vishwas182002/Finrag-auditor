@@ -7,7 +7,7 @@
   "sample_size": 120,
   "excluded_historical_question_count": 120,
   "excluded_historical_question_ids_sha256": "d65db1b64a7823e390c369bbfe672fddb2e275ff08ea2e7a85e68be63e9041b0",
-  "selection_policy": "Filter out all answerable question IDs from artifacts/results/predictions.jsonl, then apply select_held_out to maximize report diversity using seed 2027.",
+  "selection_policy": "Filter out all answerable question IDs from the original artifacts/results/predictions.jsonl (now artifacts/legacy_v1/results/predictions.jsonl), then apply select_held_out to maximize report diversity using seed 2027.",
   "purpose": "Frozen final evaluation cohort. Do not use for planner, reranker, threshold, prompt, or provider selection.",
   "question_ids": [
     "AAL/2010/page_72.pdf-1",

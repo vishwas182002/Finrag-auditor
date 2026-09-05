@@ -1,78 +1,52 @@
-"""Financial-aware exact and normalized numerical answer metrics."""
+"""Versioned, scale-aware financial answer metrics."""
 
 from __future__ import annotations
 
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from finrag.tools.citations import CITATION_RE
+from finrag.tools.financial_numbers import answer_quantity, compatible_units, parse_quantities
 
-FINANCIAL_NUMBER_RE = re.compile(
-    r"(?<![\w])\(?-?[$€£]?\d[\d,]*(?:\.\d+)?\)?(?:\s*%)?(?![\w])"
-)
+ANSWER_METRIC_VERSION = "financial-units-v2"
 
 
 def normalize_text(text: str) -> str:
-    without_citations = CITATION_RE.sub("", text)
-    lowered = without_citations.lower().strip()
+    lowered = CITATION_RE.sub("", text).lower().strip()
     lowered = re.sub(r"\b(the|a|an)\b", " ", lowered)
-    lowered = re.sub(r"[^a-z0-9.%()-]+", " ", lowered)
-    return " ".join(lowered.split())
+    return " ".join(re.sub(r"[^a-z0-9.%()-]+", " ", lowered).split())
 
 
 def parse_financial_numbers(text: str) -> list[tuple[Decimal, bool]]:
-    cleaned = CITATION_RE.sub("", text).strip()
-    parsed: list[tuple[Decimal, bool]] = []
-    for match in FINANCIAL_NUMBER_RE.finditer(cleaned):
-        raw = match.group(0).strip()
-        is_percent = raw.endswith("%")
-        if is_percent:
-            raw = raw[:-1].strip()
-        negative = raw.startswith("(") and raw.endswith(")")
-        raw = raw.strip("()").replace(",", "")
-        raw = re.sub(r"[$€£]", "", raw)
-        try:
-            value = Decimal(raw)
-        except InvalidOperation:
-            continue
-        parsed.append((-value if negative else value, is_percent))
-    return parsed
+    """Compatibility interface; scoring additionally checks explicit currencies."""
+    return [(quantity.value, quantity.is_percent) for quantity in parse_quantities(text)]
 
 
 def parse_financial_number(text: str) -> tuple[Decimal, bool] | None:
-    parsed = parse_financial_numbers(text)
-    if not parsed:
-        return None
-    percentages = [number for number in parsed if number[1]]
-    return percentages[-1] if percentages else parsed[-1]
+    quantity = answer_quantity(text)
+    return (quantity.value, quantity.is_percent) if quantity else None
 
 
 def exact_match(prediction: str, gold: str) -> bool:
-    pred_num = parse_financial_number(prediction)
-    gold_num = parse_financial_number(gold)
-    if pred_num is not None and gold_num is not None:
-        return pred_num == gold_num
+    pred, target = answer_quantity(prediction), answer_quantity(gold)
+    if pred is not None and target is not None:
+        return compatible_units(pred, target) and pred.value == target.value
     return normalize_text(prediction) == normalize_text(gold)
 
 
 def numerical_match(prediction: str, gold: str, tolerance: float) -> bool | None:
-    pred = parse_financial_number(prediction)
-    target = parse_financial_number(gold)
+    pred, target = answer_quantity(prediction), answer_quantity(gold)
     if pred is None or target is None:
         return None
-    pred_value, pred_percent = pred
-    gold_value, gold_percent = target
-    if pred_percent != gold_percent:
+    if not compatible_units(pred, target):
         return False
-    if gold_value == 0:
-        return pred_value == 0
-    relative_error = abs(pred_value - gold_value) / abs(gold_value)
-    return relative_error <= Decimal(str(tolerance))
+    if target.value == 0:
+        return pred.value == 0
+    return abs(pred.value - target.value) / abs(target.value) <= Decimal(str(tolerance))
 
 
 def score_answer(prediction: str, gold: str, tolerance: float) -> dict[str, float]:
-    numeric = numerical_match(prediction, gold, tolerance)
     return {
         "exact_match": float(exact_match(prediction, gold)),
-        "numerical_accuracy": float(bool(numeric)),
+        "numerical_accuracy": float(bool(numerical_match(prediction, gold, tolerance))),
     }

@@ -13,6 +13,7 @@ def test_paired_retrieval_comparison(tmp_path) -> None:
         {
             "question_id": question_id,
             "method": "hybrid_rerank",
+            "metric_version": "report-scoped-v2",
             "recall@1": 0.0,
             "recall@3": 0.0,
             "recall@5": 0.0,
@@ -28,3 +29,11 @@ def test_paired_retrieval_comparison(tmp_path) -> None:
     assert report["question_count"] == 2
     assert report["paired_deltas_candidate_minus_baseline"]["mrr"]["mean"] == 1.0
     assert output.exists()
+
+
+def test_legacy_comparison_is_rejected(tmp_path) -> None:
+    import pytest
+    rows = tmp_path / "rows.jsonl"
+    rows.write_text(json.dumps({"question_id": "q", "method": "hybrid_rerank"}) + "\n")
+    with pytest.raises(ValueError, match="regrade or rerun"):
+        compare_retrieval_runs(rows, rows, tmp_path / "result.json")

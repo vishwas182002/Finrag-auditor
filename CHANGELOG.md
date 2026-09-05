@@ -5,6 +5,30 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Evaluation and answer integrity
+- Scope retrieval/citation relevance and planner evidence availability by report ID.
+- Deduplicate nDCG evidence credit and version metrics as `report-scoped-v2`.
+- Normalize explicit financial scales, accounting signs and currency conflicts;
+  version answer scoring as `financial-units-v2`.
+- Render calculation answers from the Decimal result; require verbatim cited
+  passages for extraction. Preserve this as a bounded consistency check, not
+  a semantic-correctness claim. Version the deterministic provider as v2.
+- Preserve signed operands and reject duplicate citations/invalid answer types.
+- Abstain on fallback rerankers unless a separate fallback threshold is configured.
+- Include code, data, corpus and dependency contents in evaluation resume identity;
+  reset checkpoints for non-resumed runs.
+- Save full ranked evidence identities in all retrieval rows; reject v1 comparisons.
+- Archive original results unchanged under `artifacts/legacy_v1/`, reproduce
+  historical workflow regrades, and withdraw the old +10.92 MRR-point claim.
+- Align configuration defaults, dashboard labels, documentation and regression tests.
+- Rerun all 883 development questions with both neural rerankers: corrected MRR
+  gain +10.38 points (95% paired bootstrap CI 8.27–12.61). Rerun the planner audit
+  and 50-question workflow; retain the sealed final test cohort untouched.
+- Verify 114 offline tests at approximately 93% combined coverage; build Docker
+  on pull requests as well as main pushes.
+
+## Previous maintenance changes (before the v2 evaluation correction)
+
 ### Fixed
 - `safe_calculate` now converts `decimal.Overflow`/`Underflow` (e.g. deeply nested
   exponents) into `UnsafeExpressionError`, and bounds the Decimal exponent range. A

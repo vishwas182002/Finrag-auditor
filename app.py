@@ -14,7 +14,7 @@ from finrag.config import load_config
 from finrag.pipeline import build_workflow
 
 ROOT = Path(__file__).resolve().parent
-RESULTS = ROOT / "artifacts" / "results"
+RESULTS = ROOT / "artifacts" / "results" / "dev_quick_v2"
 
 st.set_page_config(page_title="FinRAG Auditor", page_icon="🔎", layout="wide")
 
@@ -125,15 +125,24 @@ with ask_tab:
             st.info("The Evaluation tab can still display previously generated artifacts.")
 
 with eval_tab:
+    st.subheader("Corrected historical scoring · no new inference")
+    st.caption("V1 retrieval claims are superseded. These regrades retain the original answers and do not evaluate the current workflow.")
+    corrected_rows = []
+    for label in ("historical_workflow", "dev_quick"):
+        regrade = read_project_json(f"artifacts/regraded_v2/{label}/summary.json")
+        if regrade:
+            corrected_rows.append({"cohort": label, "questions": regrade["answerable_questions"], **regrade["retrieval"], **regrade["answer"]})
+    if corrected_rows:
+        st.dataframe(pd.DataFrame(corrected_rows), hide_index=True, width="stretch")
     retrieval = read_json("retrieval_metrics.json")
     answers = read_json("answer_metrics.json")
     ablation_path = RESULTS / "ablation.csv"
     latency_path = RESULTS / "latency.csv"
-    if retrieval is None or answers is None or not ablation_path.exists():
+    if retrieval is None or answers is None or not ablation_path.exists() or retrieval.get("metadata", {}).get("retrieval_metric_version") != "report-scoped-v2":
         st.info("No saved evaluation run found. Run `finrag evaluate --config configs/quick_eval.yaml`.")
     else:
         metadata = retrieval["metadata"]
-        st.subheader("Verified run")
+        st.subheader("Development workflow · current scoring")
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Questions", metadata["sample_size"])
         c2.metric("Reports", metadata["report_count"])
@@ -152,15 +161,15 @@ with eval_tab:
             st.dataframe(latency, hide_index=True, width="stretch")
 
     planner_audit = read_project_json(
-        "artifacts/planner_audit/legacy_planner_dev/planner_audit.json"
+        "artifacts/planner_audit/legacy_planner_dev_v2/planner_audit.json"
     )
     bge_ablation = read_project_json(
-        "artifacts/retrieval_ablation/bge_reranker_dev/retrieval_metrics.json"
+        "artifacts/retrieval_ablation/bge_reranker_dev_v2/retrieval_metrics.json"
     )
     gate_calibration = read_project_json(
         "artifacts/abstention_calibration/bge_gate_dev/abstention_calibration.json"
     )
-    if planner_audit is not None:
+    if planner_audit is not None and planner_audit.get("metadata", {}).get("retrieval_metric_version") == "report-scoped-v2":
         st.subheader("Legacy planner diagnosis · development split")
         st.json(
             {
@@ -172,7 +181,7 @@ with eval_tab:
             },
             expanded=False,
         )
-    if bge_ablation is not None:
+    if bge_ablation is not None and bge_ablation.get("metadata", {}).get("retrieval_metric_version") == "report-scoped-v2":
         st.subheader("BGE reranker selection · development split")
         method_rows = [
             {"configuration": method, **details["metrics"]}
@@ -197,12 +206,14 @@ with about_tab:
 ### What is audited
 
 - BM25 lexical and BGE dense retrieval are fused with Reciprocal Rank Fusion.
-- A compact MS MARCO cross-encoder reranks only the strongest candidates.
+- The BGE cross-encoder reranks only the strongest candidates.
 - A configured overlap gate can abstain before planning.
 - The provider selects evidence and emits a typed calculation/extraction plan.
 - Plan validation blocks invented citations and operands absent from selected evidence.
 - Arithmetic is restricted to a Decimal-backed AST whitelist.
-- Every emitted citation must resolve to a chunk returned in the current run.
+- Calculations are rendered directly from the Decimal result.
+- Extractions must match a verbatim passage in their cited evidence.
+- Output consistency does not prove the plan answers the financial question.
 - The trace contains operational decisions and timings, never hidden chain-of-thought.
 
 The default deterministic extractive provider makes retrieval, routing, and citation tests

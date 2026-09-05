@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "split": "dev",
+    "retrieval_metric_version": "report-scoped-v2",
+    "answer_metric_version": "financial-units-v2",
+    "sample_size": 883,
+    "retrieval_method": "hybrid_rerank",
+    "retrieval_backends": {
+      "dense": "sentence-transformers:BAAI/bge-small-en-v1.5",
+      "reranker": "cross-encoder:cross-encoder/ms-marco-TinyBERT-L-2-v2"
+    },
+    "gold_program_used_only_for_scoring": true,
+    "generation_model_called": false
+  },
+  "retrieved_evidence": {
+    "gold_evidence_available": 0.6930917327293318,
+    "planner_attempted": 0.7712344280860702,
+    "executable": 0.7678369195922989,
+    "operator_accuracy": 0.1143827859569649,
+    "operand_multiset_accuracy": 0.03737259343148358,
+    "operand_recall": 0.19282748206870523,
+    "program_structure_accuracy": 0.027180067950169876,
+    "execution_accuracy": 0.05549263873159683
+  },
+  "retrieved_evidence_conditional_on_gold_available": {
+    "gold_evidence_available": 1.0,
+    "planner_attempted": 0.7826797385620915,
+    "executable": 0.7794117647058824,
+    "operator_accuracy": 0.12745098039215685,
+    "operand_multiset_accuracy": 0.05392156862745098,
+    "operand_recall": 0.27222222222222237,
+    "program_structure_accuracy": 0.0392156862745098,
+    "execution_accuracy": 0.08006535947712418
+  },
+  "oracle_gold_evidence": {
+    "gold_evidence_available": 1.0,
+    "planner_attempted": 0.7859569648924122,
+    "executable": 0.7791619479048698,
+    "operator_accuracy": 0.11891279728199321,
+    "operand_multiset_accuracy": 0.06455266138165346,
+    "operand_recall": 0.3746130615326536,
+    "program_structure_accuracy": 0.045300113250283124,
+    "execution_accuracy": 0.09513023782559456
+  }
+}

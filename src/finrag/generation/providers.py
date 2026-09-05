@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 import time
 from abc import ABC, abstractmethod
 from typing import Any
@@ -16,6 +15,7 @@ from finrag.generation.prompts import (
     render_evidence,
     render_planning_request,
 )
+from finrag.tools.citations import render_calculation_answer
 
 
 class GenerationProvider(ABC):
@@ -39,7 +39,7 @@ class GenerationProvider(ABC):
 class ExtractiveProvider(GenerationProvider):
     """Deterministic infrastructure fallback; it is not presented as an LLM."""
 
-    name = "deterministic-extractive-v1"
+    name = "deterministic-extractive-v2"
 
     def plan(self, question: str, hits: list[RetrievalHit]) -> AnswerPlan:
         return legacy_answer_plan(question, hits)
@@ -53,24 +53,10 @@ class ExtractiveProvider(GenerationProvider):
     ) -> str:
         if not hits:
             return "INSUFFICIENT_EVIDENCE"
-        citation = f"[CITATION: {hits[0].chunk.citation_id}]"
-        context_words = re.findall(r"[A-Za-z]{3,}", hits[0].chunk.content)[:5]
-        context_label = " ".join(context_words) or "the retrieved evidence"
         if calculator_result is not None:
-            suffix = "%" if any(
-                word in question.lower() for word in ("percent", "percentage")
-            ) else ""
-            return (
-                f"Using {context_label}, the calculated result is "
-                f"{calculator_result}{suffix}. {citation}"
-            )
-        numbers = re.findall(
-            r"(?<![\w])[-$€£]?\(?\d[\d,]*(?:\.\d+)?\)?%?", hits[0].chunk.content
-        )
-        if numbers:
-            return f"According to {context_label}, the retrieved value is {numbers[-1]}. {citation}"
-        sentence = hits[0].chunk.content.strip().split(". ")[0].rstrip(".")
-        return f"{sentence}. {citation}"
+            return render_calculation_answer(calculator_result, plan)
+        # Preserve the full passage, including row labels, dates, units, and signs.
+        return f"{hits[0].chunk.content.strip()} [CITATION: {hits[0].chunk.citation_id}]"
 
 
 class OpenAICompatibleProvider(GenerationProvider):

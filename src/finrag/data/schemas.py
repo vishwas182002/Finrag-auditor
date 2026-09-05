@@ -66,6 +66,8 @@ class AnswerPlan(BaseModel):
     answer_type: Literal["calculation", "extractive", "none"]
     selected_citation_ids: list[str] = Field(default_factory=list)
     calculator_expression: str | None = None
+    # Expressions must yield base units, or percentage points for percent.
+    result_unit: Literal["number", "percent", "USD", "EUR", "GBP"] = "number"
     reason_code: str
 
 

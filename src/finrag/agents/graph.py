@@ -15,7 +15,7 @@ from finrag.generation.planning import validate_answer_plan
 from finrag.generation.providers import GenerationProvider
 from finrag.indexing.index import RetrievalIndex
 from finrag.tools.calculator import UnsafeExpressionError, safe_calculate
-from finrag.tools.citations import parse_citations, verify_citations
+from finrag.tools.citations import parse_citations, render_calculation_answer, verify_answer
 from finrag.tools.retrieval import evidence_sufficiency, retrieve_evidence
 
 LOGGER = logging.getLogger(__name__)
@@ -33,12 +33,15 @@ class FinRAGWorkflow:
         self.provider = provider
         self.config = config
         reranker_backend = getattr(index, "backends", {}).get("reranker", "")
-        if reranker_backend.startswith("fallback:") and config.evidence.min_reranker_score > 0:
+        if (
+            reranker_backend.startswith("fallback:")
+            and config.evidence.fallback_min_reranker_score is None
+        ):
             # The configured threshold was calibrated on cross-encoder logits; the
             # token-overlap fallback scores in [0, 1], so the gate's meaning changes.
             LOGGER.warning(
                 "Evidence gate min_reranker_score=%.4f was calibrated for a cross-encoder, "
-                "but the reranker backend is %s; abstention decisions are not comparable.",
+                "but the reranker backend is %s; answering is disabled until a separate fallback threshold is configured.",
                 config.evidence.min_reranker_score,
                 reranker_backend,
             )
@@ -102,7 +105,10 @@ class FinRAGWorkflow:
 
     def _sufficiency(self, state: GraphState) -> dict[str, Any]:
         sufficient, details = evidence_sufficiency(
-            state["question"], state["retrieved"], self.config.evidence
+            state["question"],
+            state["retrieved"],
+            self.config.evidence,
+            reranker_backend=getattr(self.index, "backends", {}).get("reranker", ""),
         )
         return {
             "sufficient": sufficient,
@@ -166,19 +172,24 @@ class FinRAGWorkflow:
         return {
             "calculator_result": result,
             "calculator_error": error,
-            "trace": _trace(
-                state, "calculate", expression=expression, result=result, error=error
-            ),
+            "trace": _trace(state, "calculate", expression=expression, result=result, error=error),
         }
 
     def _generate(self, state: GraphState) -> dict[str, Any]:
         started = time.perf_counter()
-        answer = self.provider.generate(
-            state["question"],
-            state["selected_evidence"],
-            state["plan"],
-            state.get("calculator_result"),
-        )
+        if state["plan"].answer_type == "calculation":
+            result = state.get("calculator_result")
+            answer = (
+                render_calculation_answer(result, state["plan"])
+                if result is not None
+                else "INSUFFICIENT_EVIDENCE"
+            )
+        else:
+            answer = self.provider.generate(
+                state["question"],
+                state["selected_evidence"],
+                state["plan"],
+            )
         elapsed = (time.perf_counter() - started) * 1000
         return {
             "answer": answer,
@@ -188,7 +199,12 @@ class FinRAGWorkflow:
         }
 
     def _verify(self, state: GraphState) -> dict[str, Any]:
-        verification = verify_citations(state["answer"], state["selected_evidence"])
+        verification = verify_answer(
+            state["answer"],
+            state["selected_evidence"],
+            state["plan"],
+            state.get("calculator_result"),
+        )
         answer = state["answer"]
         abstained = state.get("abstained", False)
         if not verification.valid:

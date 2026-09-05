@@ -24,7 +24,9 @@ from finrag.evaluation.runner import run_evaluation
 from finrag.pipeline import build_corpus, build_workflow, resolve_project_root
 
 
-def _record(report: str, index: int, question: str, answer: str, program: str, gold: dict[str, str]) -> dict[str, Any]:
+def _record(
+    report: str, index: int, question: str, answer: str, program: str, gold: dict[str, str]
+) -> dict[str, Any]:
     return {
         "id": f"{report}-{index}",
         "filename": report,
@@ -33,17 +35,56 @@ def _record(report: str, index: int, question: str, answer: str, program: str, g
             "Operating costs of 80 were recorded, while interest expense was 12.",
         ],
         "post_text": ["Revenue increased during the year as volumes recovered."],
-        "table": [["Metric", "2023", "2022"], ["Revenue", "120", "100"], ["Net income", "30", "25"]],
+        "table": [
+            ["Metric", "2023", "2022"],
+            ["Revenue", "120", "100"],
+            ["Net income", "30", "25"],
+        ],
         "qa": {"question": question, "answer": answer, "program": program, "gold_inds": gold},
     }
 
 
 SYNTHETIC_RECORDS = [
-    _record("ACME/2023/page_1.pdf", 1, "What was the change in revenue?", "20", "subtract(120, 100)", {"table_1": "row"}),
-    _record("ACME/2023/page_1.pdf", 2, "What was the total of revenue and net income in 2023?", "150", "add(120, 30)", {"table_1": "row", "table_2": "row"}),
-    _record("BETA/2022/page_4.pdf", 1, "What was the percentage change in net income?", "20%", "subtract(30, 25), divide(#0, 25)", {"table_2": "row"}),
-    _record("GAMMA/2021/page_9.pdf", 1, "What were the operating costs recorded?", "80", "", {"text_1": "text"}),
-    _record("DELTA/2020/page_2.pdf", 1, "What was the average of revenue in 2023 and 2022?", "110", "add(120, 100), divide(#0, const_2)", {"table_1": "row"}),
+    _record(
+        "ACME/2023/page_1.pdf",
+        1,
+        "What was the change in revenue?",
+        "20",
+        "subtract(120, 100)",
+        {"table_1": "row"},
+    ),
+    _record(
+        "ACME/2023/page_1.pdf",
+        2,
+        "What was the total of revenue and net income in 2023?",
+        "150",
+        "add(120, 30)",
+        {"table_1": "row", "table_2": "row"},
+    ),
+    _record(
+        "BETA/2022/page_4.pdf",
+        1,
+        "What was the percentage change in net income?",
+        "20%",
+        "subtract(30, 25), divide(#0, 25)",
+        {"table_2": "row"},
+    ),
+    _record(
+        "GAMMA/2021/page_9.pdf",
+        1,
+        "What were the operating costs recorded?",
+        "80",
+        "",
+        {"text_1": "text"},
+    ),
+    _record(
+        "DELTA/2020/page_2.pdf",
+        1,
+        "What was the average of revenue in 2023 and 2022?",
+        "110",
+        "add(120, 100), divide(#0, const_2)",
+        {"table_1": "row"},
+    ),
 ]
 
 
@@ -66,7 +107,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         "seed: 1\n"
         "data:\n  path: data/raw/dev.json\n  sample_size: 4\n  unanswerable_size: 2\n"
         "  corpus_scope: full_split\n"
-        "evidence:\n  min_token_overlap: 0.05\n  min_reranker_score: 0.0\n"
+        "evidence:\n  min_token_overlap: 0.05\n  min_reranker_score: 0.0\n  fallback_min_reranker_score: 0.0\n"
         "evaluation:\n  bootstrap_samples: 20\n  run_name: synthetic\n"
         "  min_answerable_acceptance: 0.0\n"
     )
@@ -78,7 +119,9 @@ def _config(project: Path) -> AppConfig:
     return load_config(project / "configs" / "synthetic.yaml")
 
 
-def test_resolve_project_root_prefers_env_then_config_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_project_root_prefers_env_then_config_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("FINRAG_PROJECT_ROOT", str(tmp_path))
     assert resolve_project_root("anything.yaml") == tmp_path.resolve()
     monkeypatch.delenv("FINRAG_PROJECT_ROOT")
@@ -117,9 +160,11 @@ def test_run_evaluation_writes_contract_and_resumes(project: Path, offline_backe
     assert report["answer"]["answerable_questions"] == 4
     assert report["answer"]["constructed_unanswerable_questions"] == 2
     assert set(report["retrieval"]) == {"bm25", "dense", "hybrid", "hybrid_rerank"}
-    predictions = [json.loads(line) for line in (results / "predictions.jsonl").read_text().splitlines()]
+    predictions = [
+        json.loads(line) for line in (results / "predictions.jsonl").read_text().splitlines()
+    ]
     assert len(predictions) == 6
-    assert all(row["provider"] == "deterministic-extractive-v1" for row in predictions)
+    assert all(row["provider"] == "deterministic-extractive-v2" for row in predictions)
     with (results / "latency.csv").open() as handle:
         header = next(csv.reader(handle))
     assert "planning" in header
@@ -135,11 +180,18 @@ def test_run_evaluation_writes_contract_and_resumes(project: Path, offline_backe
     assert resumed["answer"]["numerical_accuracy"] == report["answer"]["numerical_accuracy"]
 
 
-def test_changed_configuration_creates_a_separate_checkpoint(project: Path, offline_backends: None) -> None:
+def test_changed_configuration_creates_a_separate_checkpoint(
+    project: Path, offline_backends: None
+) -> None:
     config = _config(project)
     run_evaluation(config, project)
     altered = config.model_copy(
-        update={"evaluation": EvaluationConfig(run_name="synthetic", bootstrap_samples=20, min_answerable_acceptance=0.0), "seed": 2},
+        update={
+            "evaluation": EvaluationConfig(
+                run_name="synthetic", bootstrap_samples=20, min_answerable_acceptance=0.0
+            ),
+            "seed": 2,
+        },
         deep=True,
     )
     run_evaluation(altered, project)
@@ -151,12 +203,18 @@ def test_retrieval_ablation_and_planner_audit(project: Path, offline_backends: N
     config = _config(project)
     ablation = run_retrieval_ablation(config, project)
     assert "latency_note" in ablation["methods"]["hybrid_rerank"]
-    rows = (project / "artifacts" / "retrieval_ablation" / "synthetic" / "retrieval_rows.jsonl").read_text().splitlines()
+    rows = (
+        (project / "artifacts" / "retrieval_ablation" / "synthetic" / "retrieval_rows.jsonl")
+        .read_text()
+        .splitlines()
+    )
     assert len(rows) == 16
     audit = run_planner_audit(config, project)
     assert audit["metadata"]["generation_model_called"] is False
     assert audit["oracle_gold_evidence"]["gold_evidence_available"] == 1.0
-    assert (project / "artifacts" / "planner_audit" / "synthetic" / "planner_audit_rows.jsonl").exists()
+    assert (
+        project / "artifacts" / "planner_audit" / "synthetic" / "planner_audit_rows.jsonl"
+    ).exists()
 
 
 def test_abstention_calibration_reports_sweep(project: Path, offline_backends: None) -> None:
@@ -164,15 +222,34 @@ def test_abstention_calibration_reports_sweep(project: Path, offline_backends: N
     report = run_abstention_calibration(config, project)
     assert report["metadata"]["constructed_unanswerable_questions"] == 4
     assert 0.0 <= report["selected"]["balanced_gate_accuracy"] <= 1.0
-    saved = json.loads((project / "artifacts" / "abstention_calibration" / "synthetic" / "abstention_calibration.json").read_text())
+    saved = json.loads(
+        (
+            project
+            / "artifacts"
+            / "abstention_calibration"
+            / "synthetic"
+            / "abstention_calibration.json"
+        ).read_text()
+    )
     assert len(saved["threshold_sweep"]) >= 2
 
 
-def test_cli_ask_and_evaluate(project: Path, offline_backends: None, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_ask_and_evaluate(
+    project: Path, offline_backends: None, capsys: pytest.CaptureFixture[str]
+) -> None:
     config_path = str(project / "configs" / "synthetic.yaml")
-    main(["ask", "What was the change in revenue?", "--config", config_path, "--report-id", "ACME/2023/page_1.pdf"])
+    main(
+        [
+            "ask",
+            "What was the change in revenue?",
+            "--config",
+            config_path,
+            "--report-id",
+            "ACME/2023/page_1.pdf",
+        ]
+    )
     payload = json.loads(capsys.readouterr().out)
-    assert payload["provider"] == "deterministic-extractive-v1"
+    assert payload["provider"] == "deterministic-extractive-v2"
     assert all(hit["chunk"]["report_id"] == "ACME/2023/page_1.pdf" for hit in payload["retrieved"])
     main(["evaluate", "--config", config_path])
     summary = json.loads(capsys.readouterr().out)
@@ -182,9 +259,52 @@ def test_cli_ask_and_evaluate(project: Path, offline_backends: None, capsys: pyt
     assert "finrag" in capsys.readouterr().out
 
 
-def test_workflow_warns_when_gate_threshold_meets_fallback_reranker(project: Path, offline_backends: None, caplog: pytest.LogCaptureFixture) -> None:
-    config = _config(project).model_copy(update={"evidence": EvidenceConfig(min_reranker_score=0.6461)}, deep=True)
+def test_workflow_warns_when_gate_threshold_meets_fallback_reranker(
+    project: Path, offline_backends: None, caplog: pytest.LogCaptureFixture
+) -> None:
+    config = _config(project).model_copy(
+        update={"evidence": EvidenceConfig(min_reranker_score=0.6461)}, deep=True
+    )
     with caplog.at_level("WARNING"):
         workflow, _ = build_workflow(config, project)
     assert workflow.index.uses_fallback
-    assert any("calibrated for a cross-encoder" in message for message in caplog.messages)
+    assert any("answering is disabled" in message for message in caplog.messages)
+    assert workflow.answer("What was the change in revenue?").abstained
+
+
+def test_edited_data_with_same_ids_invalidates_resume(
+    project: Path, offline_backends: None
+) -> None:
+    config = _config(project)
+    first = run_evaluation(config, project)
+    path = project / "data/raw/dev.json"
+    rows = json.loads(path.read_text())
+    rows[0]["qa"]["answer"] = "999"
+    path.write_text(json.dumps(rows))
+    second = run_evaluation(config, project)
+    assert (
+        first["metadata"]["evaluation_fingerprint"] != second["metadata"]["evaluation_fingerprint"]
+    )
+    predictions = [
+        json.loads(line)
+        for line in (project / "artifacts/results/synthetic/predictions.jsonl")
+        .read_text()
+        .splitlines()
+    ]
+    matching = [
+        row for row in predictions if row["question_id"] == rows[0]["id"] and row["answerable"]
+    ]
+    if matching:
+        assert matching[0]["gold_answer"] == "999"
+
+
+def test_non_resumed_run_does_not_accumulate_duplicates(
+    project: Path, offline_backends: None
+) -> None:
+    config = _config(project)
+    config.evaluation.resume = False
+    run_evaluation(config, project)
+    run_evaluation(config, project)
+    checkpoint = next((project / "artifacts/checkpoints").glob("*.jsonl"))
+    rows = [json.loads(line) for line in checkpoint.read_text().splitlines()]
+    assert len(rows) == len({row["evaluation_id"] for row in rows}) == 6
