@@ -47,7 +47,7 @@ jobs:
           assert digest == m["question_ids_sha256"], "manifest digest drift"
           print("frozen manifest ok:", len(ids), "ids")
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: matrix.python-version == '3.11'
         with:
           name: coverage-xml
